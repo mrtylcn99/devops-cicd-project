@@ -1,285 +1,259 @@
-# 🚀 DevOps CI/CD Projesi
+# DevOps CI/CD Pipeline with AWS EKS
 
-Modern DevOps pratiklerini uygulayan, production-ready CI/CD pipeline projesi.
+Production-ready CI/CD pipeline demonstrating modern DevOps practices with Kubernetes, Terraform, and GitHub Actions.
 
-## 🎯 Proje Hedefi
+## Overview
 
-Basit bir Flask web uygulamasını **3 farklı ortama** (Dev, Staging, Prod) **tamamen otomatik** olarak deploy etmek.
+Automated deployment pipeline for a Flask application across three isolated environments (Dev, Staging, Production) using AWS EKS, managed entirely through Infrastructure as Code.
 
-## ✨ Özellikler
+**Live Demo:** [Dev Environment](http://aff32291cf39944c2949c9aafb07efe7-262667895.eu-central-1.elb.amazonaws.com)
 
-- ✅ **3 İzole Environment:** Dev, Staging, Production
-- ✅ **Tam Otomatik CI/CD:** GitHub Actions ile push-to-deploy
-- ✅ **Infrastructure as Code:** Terraform ile altyapı yönetimi
-- ✅ **Container Orchestration:** AWS EKS (Kubernetes)
-- ✅ **Güvenli Secret Management:** GitHub Secrets entegrasyonu
-- ✅ **Health Checks:** Otomatik sağlık kontrolü ve rollback
-- ✅ **Auto Scaling:** Trafiğe göre otomatik ölçeklendirme
-- ✅ **Maliyet Optimizasyonu:** Tek komutla tüm altyapıyı yok et
+## Tech Stack
 
-## 🛠️ Teknoloji Stack
+- **Application:** Python Flask with Gunicorn
+- **Containerization:** Docker + Amazon ECR
+- **Orchestration:** Kubernetes (AWS EKS)
+- **Infrastructure:** Terraform
+- **CI/CD:** GitHub Actions
+- **Cloud Provider:** AWS (EKS, EC2, ECR, IAM)
 
-| Kategori | Teknoloji |
-|----------|-----------|
-| **Uygulama** | Python Flask + Gunicorn |
-| **Konteyner** | Docker + Amazon ECR |
-| **Orkestrasyon** | Kubernetes (AWS EKS) |
-| **Altyapı** | Terraform |
-| **CI/CD** | GitHub Actions |
-| **Cloud** | AWS (EKS, EC2, ECR, IAM) |
-| **Secret Management** | GitHub Secrets |
+## Features
 
-## 📁 Proje Yapısı
+- **Multi-Environment Support:** Dev, Staging, Production
+- **Automated CI/CD:** Push-to-deploy workflow
+- **Infrastructure as Code:** Complete Terraform configuration
+- **Secure Secrets:** GitHub Secrets integration
+- **Health Monitoring:** Automated readiness and liveness probes
+- **Cost Optimized:** Single-command infrastructure cleanup
 
-```
-.
-├── app.py                      # Flask uygulaması
-├── requirements.txt            # Python dependencies
-├── Dockerfile                  # Container image tanımı
-├── .dockerignore
-├── .gitignore
-│
-├── terraform/                  # Infrastructure as Code
-│   ├── main.tf                # AWS resources (EKS, ECR, IAM)
-│   ├── variables.tf           # Değişken tanımları
-│   ├── outputs.tf             # Terraform çıktıları
-│   ├── dev.tfvars             # Dev environment variables
-│   ├── staging.tfvars         # Staging environment variables
-│   └── prod.tfvars            # Prod environment variables
-│
-├── k8s/                       # Kubernetes manifests
-│   ├── namespace.yaml         # 3 environment namespace
-│   └── deployment.yaml        # Deployment + Service
-│
-├── .github/workflows/
-│   └── cicd.yaml              # CI/CD pipeline
-│
-├── DEPLOYMENT.md              # Deployment rehberi
-├── DESTROY.md                 # ⚠️ Maliyet yönetimi (ÖNEMLİ!)
-└── README.md                  # Bu dosya
-```
+## Quick Start
 
-## 🚀 Hızlı Başlangıç
+### Prerequisites
 
-### 1️⃣ Lokal Test (Docker ile)
+- AWS Account with configured credentials
+- GitHub account
+- Docker Desktop
+- Terraform >= 1.0
+- kubectl
+
+### 1. Clone and Setup
 
 ```bash
-# Image build et
-docker build -t devops-app:latest .
-
-# Çalıştır
-docker run -d -p 5000:5000 -e ENVIRONMENT=dev devops-app:latest
-
-# Test et
-curl http://localhost:5000
+git clone https://github.com/mrtylcn99/devops-cicd-project.git
+cd devops-cicd-project
 ```
 
-**Beklenen Response:**
-```json
-{
-  "message": "Merhaba! DevOps projene hoş geldin!",
-  "environment": "dev",
-  "hostname": "container-id",
-  "status": "healthy"
-}
-```
+### 2. Configure GitHub Secrets
 
-### 2️⃣ AWS'ye Deploy
+Navigate to: `Settings → Secrets → Actions → New repository secret`
 
-**Detaylı adımlar için:** [DEPLOYMENT.md](DEPLOYMENT.md) dosyasına bakın.
+Add:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
 
-**Kısa özet:**
-
-1. **GitHub Secrets ekle:**
-   - `AWS_ACCESS_KEY_ID`
-   - `AWS_SECRET_ACCESS_KEY`
-
-2. **Terraform ile altyapıyı kur:**
-   ```bash
-   cd terraform
-   terraform init
-   terraform apply -var-file="dev.tfvars"
-   ```
-
-3. **Kodu GitHub'a push et:**
-   ```bash
-   git push origin dev      # Dev'e deploy
-   git push origin staging  # Staging'e deploy
-   git push origin main     # Production'a deploy
-   ```
-
-4. **GitHub Actions otomatik çalışır!** 🎉
-
-## 🌍 Environment Yapısı
-
-| Environment | Branch | Replicas | Instance Type | Auto Deploy |
-|-------------|--------|----------|---------------|-------------|
-| **Dev** | `dev` | 1 | t3.small | ✅ |
-| **Staging** | `staging` | 1 | t3.small | ✅ |
-| **Prod** | `main` | 2 | t3.medium | ✅ |
-
-## 🔄 CI/CD Pipeline Akışı
-
-```
-Developer Push Code
-       ↓
-GitHub Actions Trigger
-       ↓
-Build Docker Image
-       ↓
-Push to Amazon ECR
-       ↓
-Update Kubeconfig
-       ↓
-Deploy to EKS Cluster
-       ↓
-Health Check
-       ↓
-Get LoadBalancer URL
-       ↓
-✅ DONE!
-```
-
-**Süre:** ~5-7 dakika
-
-## 💰 Maliyet Yönetimi
-
-### ⚠️ ÇOK ÖNEMLİ!
-
-AWS EKS **saatte $0.10** ücret alır → **Ayda ~$72**
-
-**Çözüm:** İş bitince hemen `terraform destroy` yap!
+### 3. Deploy Infrastructure
 
 ```bash
-# Önce Kubernetes kaynaklarını sil
+cd terraform
+terraform init
+terraform apply -var-file="dev.tfvars"
+```
+
+**Time:** ~12 minutes
+**Cost:** ~$0.13/hour
+
+### 4. Deploy Application
+
+```bash
+git checkout dev
+git push origin dev
+```
+
+GitHub Actions automatically builds, pushes, and deploys your application.
+
+## Environment Configuration
+
+| Environment | Branch    | Replicas | Instance  | Deploy |
+|-------------|-----------|----------|-----------|--------|
+| Dev         | `dev`     | 1        | t3.small  | Auto   |
+| Staging     | `staging` | 1        | t3.small  | Auto   |
+| Production  | `main`    | 2        | t3.medium | Auto   |
+
+## CI/CD Pipeline
+
+```
+Code Push → GitHub Actions → Docker Build → ECR Push → EKS Deploy → Health Check
+```
+
+**Duration:** 5-7 minutes per deployment
+
+## Cost Management
+
+**EKS Cluster:** $0.10/hour (~$72/month if left running)
+
+### Quick Cleanup
+
+**Windows:**
+```cmd
+destroy.cmd dev
+```
+
+**Linux/Mac:**
+```bash
+./destroy.sh dev
+```
+
+**Manual:**
+```bash
 kubectl delete namespace dev --force
-
-# Sonra Terraform destroy
 cd terraform
 terraform destroy -var-file="dev.tfvars" -auto-approve
 ```
 
-**Detaylı talimatlar:** [DESTROY.md](DESTROY.md) ⚠️ **OKUMADAN GEÇMEYİN!**
+### Estimated Costs
 
-### Tahmini Maliyetler
+| Usage          | Duration | Cost    |
+|----------------|----------|---------|
+| 2-hour test    | 2h       | ~$0.25  |
+| Daily testing  | 8h       | ~$1.00  |
+| Forgot to stop | 30d      | ~$150   |
 
-| Senaryo | Süre | Maliyet |
-|---------|------|---------|
-| **2 saat test** | 2h | ~$0.50 |
-| **1 gün** | 24h | ~$2.40 |
-| **1 hafta (unutulmuş)** | 7d | ~$30 💸 |
-| **1 ay (unutulmuş)** | 30d | ~$150 💸💸💸 |
-
-## 🧪 Test Senaryoları
-
-### Manuel Test
+## Local Development
 
 ```bash
-# Pod'ları kontrol et
+# Build image
+docker build -t devops-app:latest .
+
+# Run container
+docker run -p 5000:5000 -e ENVIRONMENT=dev devops-app:latest
+
+# Test endpoint
+curl http://localhost:5000
+```
+
+**Expected Response:**
+```json
+{
+  "message": "Merhaba! DevOps projene hoş geldin! 🚀",
+  "environment": "dev",
+  "hostname": "container-id",
+  "status": "healthy",
+  "version": "1.0.0"
+}
+```
+
+## Deployment Commands
+
+### Deploy Staging
+
+```bash
+cd terraform
+terraform apply -var-file="staging.tfvars" -auto-approve
+git push origin staging
+```
+
+### Deploy Production
+
+```bash
+cd terraform
+terraform apply -var-file="prod.tfvars" -auto-approve
+git push origin main
+```
+
+## Monitoring
+
+```bash
+# Check pods
 kubectl get pods -n dev
 
-# Logları izle
+# View logs
 kubectl logs -f deployment/devops-app -n dev
 
-# Service URL'i al
+# Get service URL
 kubectl get svc devops-app-service -n dev
-
-# Health check
-curl http://<LOAD-BALANCER-URL>/health
 ```
 
-### Otomatik Test
+## Security
 
-Pipeline içinde otomatik:
-- ✅ Docker build test
-- ✅ Container health check
-- ✅ Kubernetes deployment verification
-- ✅ Rollout status check
+- Secrets managed via GitHub Secrets (never committed)
+- IAM roles with least privilege
+- Container image scanning enabled
+- Resource limits enforced
+- Network policies configured
 
-## 📊 Monitoring
+## Troubleshooting
 
-```bash
-# Real-time pod durumu
-kubectl get pods -n dev --watch
-
-# Resource kullanımı
-kubectl top pods -n dev
-
-# Deployment detayları
-kubectl describe deployment devops-app -n dev
-```
-
-## 🔐 Security Best Practices
-
-✅ **Yapılanlar:**
-- Secrets asla repo'ya commit edilmez (`.gitignore`)
-- GitHub Secrets ile güvenli saklama
-- IAM roles ile minimum privilege
-- ECR image scanning aktif
-- Resource limits (CPU, Memory)
-
-❌ **Yapılmaması gerekenler:**
-- AWS credentials'ı kod içine yazmak
-- `.env` dosyasını commit etmek
-- Root user ile çalışmak
-
-## 🐛 Troubleshooting
-
-### Problem: Image pull hatası
-
-```bash
-aws ecr get-login-password --region eu-central-1 | \
-  docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.eu-central-1.amazonaws.com
-```
-
-### Problem: Pod çalışmıyor
-
+**Pod not starting:**
 ```bash
 kubectl describe pod <pod-name> -n dev
 kubectl logs <pod-name> -n dev
 ```
 
-### Problem: Terraform hata veriyor
-
+**LoadBalancer pending:**
+Wait 2-3 minutes for AWS to provision. Check with:
 ```bash
-# State'i kontrol et
-terraform state list
-
-# Problematic resource'u kaldır
-terraform state rm <resource>
-
-# Tekrar dene
-terraform apply
+kubectl get svc -n dev --watch
 ```
 
-## 📚 Öğrendiklerimiz
+**Terraform errors:**
+```bash
+terraform state list
+terraform state rm <problematic-resource>
+terraform apply -var-file="dev.tfvars"
+```
 
-- ✅ Docker containerization
-- ✅ Kubernetes orchestration
-- ✅ Infrastructure as Code (Terraform)
-- ✅ CI/CD automation (GitHub Actions)
-- ✅ AWS cloud services (EKS, ECR, IAM)
-- ✅ Secret management
-- ✅ Multi-environment deployment
-- ✅ Cost optimization
+## Project Structure
 
-## 🎯 Gelecek İyileştirmeler
+```
+.
+├── app.py                   # Flask application
+├── Dockerfile               # Container definition
+├── requirements.txt         # Python dependencies
+├── terraform/               # Infrastructure code
+│   ├── main.tf             # AWS resources
+│   ├── variables.tf        # Variable definitions
+│   ├── outputs.tf          # Output values
+│   └── *.tfvars           # Environment configs
+├── k8s/                    # Kubernetes manifests
+│   ├── namespace.yaml     # Namespace definitions
+│   └── deployment.yaml    # Deployment & Service
+└── .github/workflows/      # CI/CD pipelines
+    └── cicd.yaml
 
-- [ ] Argo CD entegrasyonu (GitOps)
-- [ ] Prometheus + Grafana monitoring
-- [ ] Helm Charts
-- [ ] Blue-Green deployment
-- [ ] Automated testing (pytest)
-- [ ] SSL/TLS (HTTPS)
+```
 
-## 📞 İletişim
+## What You'll Learn
 
-**GitHub:** [@mrtylcn99](https://github.com/mrtylcn99)
+- Docker containerization and multi-stage builds
+- Kubernetes orchestration and resource management
+- Terraform infrastructure automation
+- GitHub Actions CI/CD pipelines
+- AWS EKS cluster management
+- Multi-environment deployment strategies
+- Secret management best practices
+- Cost optimization techniques
 
-## 📄 Lisans
+## Future Enhancements
 
-Bu proje eğitim amaçlıdır ve serbestçe kullanılabilir.
+- [ ] Argo CD for GitOps
+- [ ] Prometheus & Grafana monitoring
+- [ ] Helm chart deployment
+- [ ] Blue-Green deployments
+- [ ] Automated testing suite
+- [ ] SSL/TLS configuration
+
+## Contributing
+
+Pull requests are welcome. For major changes, please open an issue first.
+
+## License
+
+This project is for educational purposes and is freely available.
+
+## Author
+
+**Mert Yalçın** - [@mrtylcn99](https://github.com/mrtylcn99)
 
 ---
 
-⭐ **Projeyi beğendiysen yıldız vermeyi unutma!**
+⚠️ **Remember:** Always run `terraform destroy` after testing to avoid unnecessary costs!
