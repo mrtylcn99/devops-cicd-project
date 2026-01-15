@@ -2,19 +2,56 @@
 REM DevOps CI/CD Project - Infrastructure Cleanup Script
 REM Usage: destroy.cmd [environment]
 REM Example: destroy.cmd dev
+REM Or: destroy.cmd (destroys all 3 environments)
 
 setlocal
 
 if "%1"=="" (
-    echo ERROR: Environment parameter required!
+    echo ========================================
+    echo  DevOps CI/CD - Destroy ALL Environments
+    echo ========================================
     echo.
-    echo Usage: destroy.cmd [environment]
-    echo Example: destroy.cmd dev
+    echo No environment specified. Will destroy ALL 3 environments:
+    echo - Dev
+    echo - Staging
+    echo - Production
     echo.
-    echo Available environments: dev, staging, prod
-    exit /b 1
+    echo WARNING: This will delete everything!
+    echo This will take approximately 20-25 minutes
+    echo.
+    echo Press Ctrl+C to cancel, or
+    pause
+
+    call :destroy_env dev
+    if errorlevel 1 exit /b 1
+
+    call :destroy_env staging
+    if errorlevel 1 exit /b 1
+
+    call :destroy_env prod
+    if errorlevel 1 exit /b 1
+
+    echo.
+    echo ========================================
+    echo  ALL ENVIRONMENTS DESTROYED!
+    echo ========================================
+    echo.
+    echo All 3 environments have been deleted:
+    echo - Dev cluster
+    echo - Staging cluster
+    echo - Production cluster
+    echo.
+    echo Cost: $0/hour (all clusters stopped)
+    echo.
+    echo Verify in AWS Console that everything is deleted.
+    echo.
+    pause
+    exit /b 0
 )
 
+set ENV=%1
+
+:destroy_env
 set ENV=%1
 
 echo ========================================
@@ -29,8 +66,10 @@ echo - EC2 Instances
 echo - Load Balancer
 echo - ECR Repository
 echo.
-echo Press Ctrl+C to cancel or
-pause
+if not "%1"=="" (
+    echo Press Ctrl+C to cancel or
+    pause
+)
 
 echo.
 echo [1/3] Deleting Kubernetes resources...
@@ -59,6 +98,7 @@ if errorlevel 1 (
     echo ERROR: Terraform destroy failed!
     echo Please check the error messages above.
     echo You may need to manually delete resources from AWS Console.
+    cd ..
     exit /b 1
 )
 
@@ -71,6 +111,7 @@ echo ========================================
 echo.
 echo Environment %ENV% has been destroyed.
 echo.
+if "%1"=="" exit /b 0
 echo IMPORTANT: Verify in AWS Console:
 echo - EC2 Instances are terminated
 echo - Load Balancers are deleted
@@ -79,3 +120,4 @@ echo.
 echo Check your AWS bill in 24 hours to confirm zero usage.
 echo.
 pause
+exit /b 0

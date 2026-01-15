@@ -50,3 +50,4 @@ aws-credentials.txt
 
 # Logs
 *.log
+.claude/

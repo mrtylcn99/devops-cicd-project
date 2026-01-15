@@ -29,9 +29,10 @@ git push origin dev       # Uygulama deploy (~5 dakika)
 
 **Durdur:**
 ```bash
-destroy.cmd dev           # Mutlaka çalıştır yoksa para gider!
-destroy.cmd staging
-destroy.cmd prod
+destroy.cmd               # Hepsini sil (~20 dakika)
+# VEYA
+destroy.cmd dev           # Sadece dev'i sil
+destroy.cmd staging       # Sadece staging'i sil
 ```
 
 ## Maliyet
