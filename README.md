@@ -233,9 +233,24 @@ terraform apply -var-file="dev.tfvars"
 - Secret management best practices
 - Cost optimization techniques
 
+## Argo CD (GitOps)
+
+**Status:** ✅ Implemented
+
+Argo CD is installed on the dev cluster for GitOps-style deployments.
+
+**Access:**
+- URL: http://a695fd93356ba4669b7707b4aa7e7d5b-421387763.eu-central-1.elb.amazonaws.com
+- Username: `admin`
+- Password: Run `kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d`
+
+**Features:**
+- Automated sync from Git repository
+- Self-healing deployments
+- Declarative GitOps workflow
+
 ## Future Enhancements
 
-- [ ] Argo CD for GitOps
 - [ ] Prometheus & Grafana monitoring
 - [ ] Helm chart deployment
 - [ ] Blue-Green deployments

@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-app-${ENVIRONMENT}
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/mrtylcn99/devops-cicd-project.git
+    targetRevision: ${BRANCH}
+    path: k8s
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ${ENVIRONMENT}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+    - CreateNamespace=true
+
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
