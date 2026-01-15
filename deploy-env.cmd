@@ -2,19 +2,55 @@
 REM DevOps CI/CD Project - Quick Environment Setup
 REM Usage: deploy-env.cmd [environment]
 REM Example: deploy-env.cmd staging
+REM Or: deploy-env.cmd (deploys all 3 environments)
 
 setlocal
 
 if "%1"=="" (
-    echo ERROR: Environment parameter required!
+    echo ========================================
+    echo  DevOps CI/CD - Deploy ALL Environments
+    echo ========================================
     echo.
-    echo Usage: deploy-env.cmd [environment]
-    echo Example: deploy-env.cmd staging
+    echo No environment specified. Will deploy ALL 3 environments:
+    echo - Dev
+    echo - Staging
+    echo - Production
     echo.
-    echo Available environments: dev, staging, prod
-    exit /b 1
+    echo This will take approximately 45-60 minutes
+    echo Cost: ~$0.30/hour after completion
+    echo.
+    echo Press Ctrl+C to cancel, or
+    pause
+
+    call :deploy_env dev
+    if errorlevel 1 exit /b 1
+
+    call :deploy_env staging
+    if errorlevel 1 exit /b 1
+
+    call :deploy_env prod
+    if errorlevel 1 exit /b 1
+
+    echo.
+    echo ========================================
+    echo  ALL ENVIRONMENTS DEPLOYED!
+    echo ========================================
+    echo.
+    echo All 3 environments are ready:
+    echo - Dev cluster
+    echo - Staging cluster
+    echo - Production cluster
+    echo.
+    echo WARNING: 3 clusters running = $0.30/hour = ~$216/month
+    echo Don't forget to destroy when done!
+    echo.
+    pause
+    exit /b 0
 )
 
+set ENV=%1
+
+:deploy_env
 set ENV=%1
 
 echo ========================================
@@ -85,4 +121,6 @@ echo.
 echo WARNING: Don't forget to destroy when done!
 echo Command: destroy.cmd %ENV%
 echo.
+if "%1"=="" exit /b 0
 pause
+exit /b 0

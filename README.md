@@ -16,15 +16,22 @@ Kodu push'la → GitHub Actions build eder → ECR'a yükler → Kubernetes'e de
 
 ## Kullanım
 
-**Başlat:**
+**Hepsini Başlat (Tek Komut):**
 ```bash
-deploy-env.cmd dev        # ~15 dakika
-git push origin dev       # ~5 dakika
+deploy-env.cmd            # 3 ortam birden (~45-60 dakika)
+```
+
+**Tek Ortam Başlat:**
+```bash
+deploy-env.cmd dev        # Sadece dev (~15 dakika)
+git push origin dev       # Uygulama deploy (~5 dakika)
 ```
 
 **Durdur:**
 ```bash
 destroy.cmd dev           # Mutlaka çalıştır yoksa para gider!
+destroy.cmd staging
+destroy.cmd prod
 ```
 
 ## Maliyet

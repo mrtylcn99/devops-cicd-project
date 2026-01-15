@@ -6,11 +6,23 @@
 
 ## Test Et
 
+**Hızlı test (tek ortam):**
 ```bash
 deploy-env.cmd dev              # Kur (~15 dakika)
 git push origin dev             # Deploy et (~5 dakika)
 kubectl get pods -n dev         # Kontrol et
 destroy.cmd dev                 # Sil (mutlaka!)
+```
+
+**Tam test (3 ortam):**
+```bash
+deploy-env.cmd                  # Hepsini kur (~45-60 dakika)
+git push origin dev
+git push origin staging
+git push origin main
+destroy.cmd dev                 # Hepsini sil
+destroy.cmd staging
+destroy.cmd prod
 ```
 
 ## Ne Paylaş
