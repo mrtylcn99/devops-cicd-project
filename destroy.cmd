@@ -72,7 +72,7 @@ if not "%1"=="" (
 )
 
 echo.
-echo [1/3] Deleting Kubernetes resources...
+echo [1/4] Deleting Kubernetes resources...
 echo ========================================
 kubectl delete namespace %ENV% --force --grace-period=0 2>nul
 if errorlevel 1 (
@@ -82,15 +82,29 @@ if errorlevel 1 (
 )
 
 echo.
-echo [2/3] Waiting for LoadBalancer to be deleted...
+echo [2/4] Waiting for LoadBalancer to be deleted...
 echo ========================================
 echo This may take 2-3 minutes...
 timeout /t 180 /nobreak >nul
 
 echo.
-echo [3/3] Destroying Terraform infrastructure...
+echo [3/4] Switching Terraform workspace...
 echo ========================================
 cd terraform
+terraform init
+
+REM Switch to appropriate workspace
+if "%ENV%"=="dev" (
+    echo Selecting default workspace for dev...
+    terraform workspace select default 2>nul
+) else (
+    echo Selecting %ENV% workspace...
+    terraform workspace select %ENV% 2>nul
+)
+
+echo.
+echo [4/4] Destroying Terraform infrastructure...
+echo ========================================
 terraform destroy -var-file="%ENV%.tfvars" -auto-approve
 
 if errorlevel 1 (

@@ -67,13 +67,28 @@ echo.
 echo Estimated time: 15-20 minutes
 echo Estimated cost: ~$0.13/hour
 echo.
-pause
+if not "%2"=="" pause
 
 echo.
-echo [1/4] Deploying Terraform infrastructure...
+echo [1/5] Switching Terraform workspace...
 echo ========================================
 cd terraform
 terraform init
+
+REM Switch to appropriate workspace
+if "%ENV%"=="dev" (
+    echo Selecting default workspace for dev...
+    terraform workspace select default 2>nul
+    if errorlevel 1 terraform workspace new default
+) else (
+    echo Selecting %ENV% workspace...
+    terraform workspace select %ENV% 2>nul
+    if errorlevel 1 terraform workspace new %ENV%
+)
+
+echo.
+echo [2/5] Deploying Terraform infrastructure...
+echo ========================================
 terraform apply -var-file="%ENV%.tfvars" -auto-approve
 
 if errorlevel 1 (
@@ -83,19 +98,19 @@ if errorlevel 1 (
 )
 
 echo.
-echo [2/4] Configuring kubectl...
+echo [3/5] Configuring kubectl...
 echo ========================================
 for /f "delims=" %%i in ('terraform output -raw cluster_name') do set CLUSTER_NAME=%%i
 aws eks update-kubeconfig --region eu-central-1 --name %CLUSTER_NAME%
 
 echo.
-echo [3/4] Creating Kubernetes namespaces...
+echo [4/5] Creating Kubernetes namespaces...
 echo ========================================
 cd ..
 kubectl apply -f k8s/namespace.yaml
 
 echo.
-echo [4/4] Waiting for nodes to be ready...
+echo [5/5] Waiting for nodes to be ready...
 echo ========================================
 timeout /t 30 /nobreak >nul
 kubectl get nodes

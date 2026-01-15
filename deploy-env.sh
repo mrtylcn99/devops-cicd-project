@@ -26,10 +26,23 @@ echo ""
 read -p "Press Enter to continue or Ctrl+C to cancel..."
 
 echo ""
-echo "[1/4] Deploying Terraform infrastructure..."
+echo "[1/5] Switching Terraform workspace..."
 echo "========================================"
 cd terraform
 terraform init
+
+# Switch to appropriate workspace
+if [ "$ENV" = "dev" ]; then
+    echo "Selecting default workspace for dev..."
+    terraform workspace select default 2>/dev/null || terraform workspace new default
+else
+    echo "Selecting $ENV workspace..."
+    terraform workspace select $ENV 2>/dev/null || terraform workspace new $ENV
+fi
+
+echo ""
+echo "[2/5] Deploying Terraform infrastructure..."
+echo "========================================"
 terraform apply -var-file="${ENV}.tfvars" -auto-approve
 
 if [ $? -ne 0 ]; then
@@ -39,19 +52,19 @@ if [ $? -ne 0 ]; then
 fi
 
 echo ""
-echo "[2/4] Configuring kubectl..."
+echo "[3/5] Configuring kubectl..."
 echo "========================================"
 CLUSTER_NAME=$(terraform output -raw cluster_name)
 aws eks update-kubeconfig --region eu-central-1 --name $CLUSTER_NAME
 
 echo ""
-echo "[3/4] Creating Kubernetes namespaces..."
+echo "[4/5] Creating Kubernetes namespaces..."
 echo "========================================"
 cd ..
 kubectl apply -f k8s/namespace.yaml
 
 echo ""
-echo "[4/4] Waiting for nodes to be ready..."
+echo "[5/5] Waiting for nodes to be ready..."
 echo "========================================"
 sleep 30
 kubectl get nodes
