@@ -11,10 +11,11 @@ def home():
     hostname = socket.gethostname()
 
     return jsonify({
-        'message': f'Merhaba! DevOps projene hoş geldin!',
+        'message': f'Merhaba! DevOps projene hoş geldin! 🚀',
         'environment': environment,
         'hostname': hostname,
-        'status': 'healthy'
+        'status': 'healthy',
+        'version': '1.0.0'
     })
 
 @app.route('/health')
