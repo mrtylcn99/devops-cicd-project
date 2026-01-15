@@ -1,365 +1,236 @@
-# DevOps CI/CD Pipeline with AWS EKS
+# DevOps CI/CD Pipeline
 
-Production-ready CI/CD pipeline demonstrating modern DevOps practices with Kubernetes, Terraform, and GitHub Actions.
+Flask uygulaması için AWS EKS üzerinde çalışan otomatik deployment pipeline'ı. 3 ayrı ortam (Dev, Staging, Production) ile tam CI/CD.
 
-## Overview
+## Neler Kullanıldı
 
-Automated deployment pipeline for a Flask application across three isolated environments (Dev, Staging, Production) using AWS EKS, managed entirely through Infrastructure as Code.
-
-**Live Demo:** [Dev Environment](http://aff32291cf39944c2949c9aafb07efe7-262667895.eu-central-1.elb.amazonaws.com)
-
-## Tech Stack
-
-- **Application:** Python Flask with Gunicorn
-- **Containerization:** Docker + Amazon ECR
-- **Orchestration:** Kubernetes (AWS EKS)
+- **Uygulama:** Python Flask
+- **Container:** Docker + Amazon ECR
+- **Kubernetes:** AWS EKS
 - **Infrastructure:** Terraform
 - **CI/CD:** GitHub Actions
-- **Cloud Provider:** AWS (EKS, EC2, ECR, IAM)
+- **GitOps:** Argo CD
 
-## Features
+## Nasıl Çalışıyor
 
-- **Multi-Environment Support:** Dev, Staging, Production
-- **Automated CI/CD:** Push-to-deploy workflow
-- **Infrastructure as Code:** Complete Terraform configuration
-- **Secure Secrets:** GitHub Secrets integration
-- **Health Monitoring:** Automated readiness and liveness probes
-- **Cost Optimized:** Single-command infrastructure cleanup
+1. Kodu GitHub'a push'luyorsun
+2. GitHub Actions otomatik olarak Docker image build ediyor
+3. Image ECR'a upload ediliyor
+4. Kubernetes cluster'a deploy ediliyor
+5. Uygulama hazır!
 
-## Quick Start
+Her branch kendi ortamına deploy oluyor:
+- `dev` branch → Dev cluster
+- `staging` branch → Staging cluster
+- `main` branch → Production cluster
 
-### Prerequisites
+## Hızlı Başlangıç
 
-- AWS Account with configured credentials
-- GitHub account
+### Gereksinimler
+
+- AWS hesabı (credentials ayarlı)
 - Docker Desktop
-- Terraform >= 1.0
+- Terraform
 - kubectl
 
-### 1. Clone and Setup
+### 1. Projeyi Kopyala
 
 ```bash
 git clone https://github.com/mrtylcn99/devops-cicd-project.git
 cd devops-cicd-project
 ```
 
-### 2. Configure GitHub Secrets
+### 2. GitHub Secrets Ayarla
 
-Navigate to: `Settings → Secrets → Actions → New repository secret`
-
-Add:
+GitHub repo → Settings → Secrets → Actions'a şunları ekle:
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 
-### 3. Deploy Infrastructure (Choose One Method)
+### 3. Altyapıyı Kur
 
-**Option A - Automated Script (Recommended):**
+**Kolay yol (önerilen):**
 
-Windows:
 ```cmd
 deploy-env.cmd dev
 ```
 
-Linux/Mac:
-```bash
-./deploy-env.sh dev
-```
+Bu script şunları yapıyor:
+- Terraform ile EKS cluster kuruyor
+- kubectl'i otomatik ayarlıyor
+- Namespace'leri oluşturuyor
+- Node'ların hazır olmasını bekliyor
 
-This script automatically:
-- Deploys Terraform infrastructure
-- Configures kubectl with your cluster
-- Creates Kubernetes namespaces
-- Verifies nodes are ready
+Süre: ~12-15 dakika
+Maliyet: Saatte $0.13
 
-**Time:** ~15 minutes
-**Cost:** ~$0.13/hour
-
-**Option B - Manual Deployment:**
+**Manuel yol:**
 
 ```bash
 cd terraform
 terraform init
 terraform apply -var-file="dev.tfvars"
-aws eks update-kubeconfig --region eu-central-1 --name <cluster-name>
+aws eks update-kubeconfig --region eu-central-1 --name <cluster-adı>
 kubectl apply -f k8s/namespace.yaml
 ```
 
-### 4. Deploy Application
+### 4. Uygulamayı Deploy Et
 
 ```bash
 git checkout dev
 git push origin dev
 ```
 
-GitHub Actions automatically builds, pushes, and deploys your application.
+GitHub Actions devreye giriyor ve 5-7 dakikada her şeyi hallediyor.
 
-## Environment Configuration
+## Otomasyon Scriptleri
 
-| Environment | Branch    | Replicas | Instance  | Deploy |
-|-------------|-----------|----------|-----------|--------|
-| Dev         | `dev`     | 1        | t3.small  | Auto   |
-| Staging     | `staging` | 1        | t3.small  | Auto   |
-| Production  | `main`    | 2        | t3.medium | Auto   |
+### deploy-env.cmd
 
-## CI/CD Pipeline
+İlk kurulum veya destroy sonrası kullan.
 
-```
-Code Push → GitHub Actions → Docker Build → ECR Push → EKS Deploy → Health Check
+```cmd
+deploy-env.cmd dev         # Dev ortamı kur
+deploy-env.cmd staging     # Staging ortamı kur
 ```
 
-**Duration:** 5-7 minutes per deployment
+Ne yapıyor:
+1. Terraform init + apply
+2. kubectl ayarlarını yapıyor
+3. Namespace'leri oluşturuyor
+4. Her şeyin hazır olup olmadığını kontrol ediyor
 
-## Automation Scripts
+Süre: Her seferinde ~12-15 dakika (ilk seferle aynı)
 
-This project includes automation scripts for easy deployment and cleanup.
+### destroy.cmd
 
-### deploy-env.cmd / deploy-env.sh
+Test bittikten sonra **mutlaka** çalıştır, yoksa para gider!
 
-**Purpose:** Complete environment setup from scratch
-
-**What it does:**
-1. Runs `terraform init` and `terraform apply` with the specified environment
-2. Automatically configures kubectl to connect to your new EKS cluster
-3. Creates Kubernetes namespaces (dev/staging/prod)
-4. Waits for nodes to be ready
-5. Displays next steps
-
-**Usage:**
-```bash
-# Windows
-deploy-env.cmd [environment]
-
-# Linux/Mac
-./deploy-env.sh [environment]
-
-# Examples
-deploy-env.cmd dev
-deploy-env.cmd staging
+```cmd
+destroy.cmd dev           # Dev ortamını sil
+destroy.cmd staging       # Staging ortamını sil
 ```
 
-**When to use:** First-time setup or after running destroy
+Ne yapıyor:
+1. Kubernetes namespace'i ve tüm kaynakları siliyor
+2. LoadBalancer'ın silinmesini bekliyor (3 dakika)
+3. Terraform destroy ile tüm AWS kaynaklarını kaldırıyor
 
-### destroy.cmd / destroy.sh
+## Maliyet
 
-**Purpose:** Complete infrastructure cleanup
+Unutursan ağlar! Her EKS cluster saatte $0.10 tutuyor.
 
-**What it does:**
-1. Deletes Kubernetes namespace and all resources (pods, services, etc.)
-2. Waits 3 minutes for AWS LoadBalancer to be deleted
-3. Runs `terraform destroy` to remove all AWS infrastructure
-4. Verifies completion
+| Senaryo | Süre | Maliyet |
+|---------|------|---------|
+| 2 saatlik test | 2h | ~$0.25 |
+| Tüm gün açık | 8h | ~$1.00 |
+| Unutup 1 ay | 30 gün | ~$150 |
 
-**Usage:**
-```bash
-# Windows
-destroy.cmd [environment]
+**Test bitince mutlaka:** `destroy.cmd dev`
 
-# Linux/Mac
-./destroy.sh [environment]
+## Ortamlar
 
-# Examples
-destroy.cmd dev
-./destroy.sh staging
-```
+| Ortam | Branch | Replicas | Instance | Deploy |
+|-------|--------|----------|----------|--------|
+| Dev | `dev` | 1 | t3.small | Otomatik |
+| Staging | `staging` | 1 | t3.small | Otomatik |
+| Production | `main` | 2 | t3.medium | Otomatik |
 
-**When to use:** After testing to avoid AWS costs
-
-**Important:** Always destroy environments when not in use to avoid charges!
-
-## Cost Management
-
-**EKS Cluster:** $0.10/hour (~$72/month if left running)
-
-### Quick Cleanup
-
-Use the automation scripts above, or manual cleanup:
-
-**Manual:**
-```bash
-kubectl delete namespace dev --force
-cd terraform
-terraform destroy -var-file="dev.tfvars" -auto-approve
-```
-
-### Estimated Costs
-
-| Usage          | Duration | Cost    |
-|----------------|----------|---------|
-| 2-hour test    | 2h       | ~$0.25  |
-| Daily testing  | 8h       | ~$1.00  |
-| Forgot to stop | 30d      | ~$150   |
-
-## Local Development
+## Yerel Test
 
 ```bash
-# Build image
-docker build -t devops-app:latest .
-
-# Run container
-docker run -p 5000:5000 -e ENVIRONMENT=dev devops-app:latest
-
-# Test endpoint
+docker build -t devops-app .
+docker run -p 5000:5000 -e ENVIRONMENT=dev devops-app
 curl http://localhost:5000
 ```
 
-**Expected Response:**
+Çıktı:
 ```json
 {
   "message": "Merhaba! DevOps projene hoş geldin! 🚀",
   "environment": "dev",
-  "hostname": "container-id",
+  "hostname": "...",
   "status": "healthy",
   "version": "1.0.0"
 }
 ```
 
-## Deployment Commands
-
-### Deploy Staging
-
-```bash
-cd terraform
-terraform apply -var-file="staging.tfvars" -auto-approve
-git push origin staging
-```
-
-### Deploy Production
-
-```bash
-cd terraform
-terraform apply -var-file="prod.tfvars" -auto-approve
-git push origin main
-```
-
 ## Monitoring
 
 ```bash
-# Check pods
+# Pod'ları kontrol et
 kubectl get pods -n dev
 
-# View logs
+# Log'lara bak
 kubectl logs -f deployment/devops-app -n dev
 
-# Get service URL
+# Servis URL'ini al
 kubectl get svc devops-app-service -n dev
 ```
 
-## Security
+## Sorun Giderme
 
-- Secrets managed via GitHub Secrets (never committed)
-- IAM roles with least privilege
-- Container image scanning enabled
-- Resource limits enforced
-- Network policies configured
-
-## Troubleshooting
-
-**Pod not starting:**
+**Pod başlamıyor:**
 ```bash
-kubectl describe pod <pod-name> -n dev
-kubectl logs <pod-name> -n dev
+kubectl describe pod <pod-adı> -n dev
+kubectl logs <pod-adı> -n dev
 ```
 
 **LoadBalancer pending:**
-Wait 2-3 minutes for AWS to provision. Check with:
+2-3 dakika bekle, AWS hazırlıyor. Kontrol:
 ```bash
 kubectl get svc -n dev --watch
 ```
 
-**Terraform errors:**
+**Terraform hatası:**
 ```bash
 terraform state list
-terraform state rm <problematic-resource>
+terraform state rm <sorunlu-kaynak>
 terraform apply -var-file="dev.tfvars"
 ```
 
-## Project Structure
+## Argo CD (GitOps)
+
+Dev cluster'da kurulu. GitOps tarzı deployment için.
+
+**Erişim:**
+- URL: http://a695fd93356ba4669b7707b4aa7e7d5b-421387763.eu-central-1.elb.amazonaws.com
+- Kullanıcı: `admin`
+- Şifre: `kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d`
+
+## Proje Yapısı
 
 ```
 .
-├── app.py                   # Flask application
-├── Dockerfile               # Container definition
-├── requirements.txt         # Python dependencies
-├── terraform/               # Infrastructure code
-│   ├── main.tf             # AWS resources
-│   ├── variables.tf        # Variable definitions
-│   ├── outputs.tf          # Output values
-│   └── *.tfvars           # Environment configs
-├── k8s/                    # Kubernetes manifests
-│   ├── namespace.yaml     # Namespace definitions
-│   └── deployment.yaml    # Deployment & Service
-└── .github/workflows/      # CI/CD pipelines
+├── app.py                   # Flask uygulaması
+├── Dockerfile               # Container tanımı
+├── requirements.txt         # Python paketleri
+├── deploy-env.cmd          # Kurulum scripti
+├── destroy.cmd             # Temizlik scripti
+├── terraform/              # Altyapı kodu
+│   ├── main.tf            # AWS kaynakları
+│   ├── variables.tf       # Değişkenler
+│   ├── outputs.tf         # Çıktılar
+│   ├── dev.tfvars        # Dev ayarları
+│   ├── staging.tfvars    # Staging ayarları
+│   └── prod.tfvars       # Prod ayarları
+├── k8s/                   # Kubernetes dosyaları
+│   ├── namespace.yaml    # Namespace'ler
+│   └── deployment.yaml   # Deployment ve Service
+├── argocd/               # Argo CD config
+│   └── application.yaml
+└── .github/workflows/    # CI/CD
     └── cicd.yaml
-
 ```
 
-## What You'll Learn
+## Güvenlik
 
-- Docker containerization and multi-stage builds
-- Kubernetes orchestration and resource management
-- Terraform infrastructure automation
-- GitHub Actions CI/CD pipelines
-- AWS EKS cluster management
-- Multi-environment deployment strategies
-- Secret management best practices
-- Cost optimization techniques
-
-## Argo CD (GitOps)
-
-**Status:** ✅ Implemented
-
-Argo CD is installed on the dev cluster for GitOps-style deployments.
-
-**Access:**
-- URL: http://a695fd93356ba4669b7707b4aa7e7d5b-421387763.eu-central-1.elb.amazonaws.com
-- Username: `admin`
-- Password: Run `kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d`
-
-**Features:**
-- Automated sync from Git repository
-- Self-healing deployments
-- Declarative GitOps workflow
-
-## Future Enhancements
-
-- [ ] Prometheus & Grafana monitoring
-- [ ] Helm chart deployment
-- [ ] Blue-Green deployments
-- [ ] Automated testing suite
-- [ ] SSL/TLS configuration
-
-## Submission Checklist
-
-If you're submitting this project, ensure you have:
-
-- [ ] GitHub repository with all code pushed
-- [ ] GitHub Actions CI/CD pipeline working
-- [ ] At least one environment deployed and tested
-- [ ] README.md with clear instructions
-- [ ] AWS credentials configured as GitHub Secrets (never in code)
-- [ ] All 3 environment configs (dev.tfvars, staging.tfvars, prod.tfvars)
-- [ ] Automation scripts (deploy-env, destroy) working
-- [ ] Argo CD installed (optional but recommended)
-- [ ] Infrastructure destroyed after testing to avoid costs
-
-**What to share:**
-- Repository URL: https://github.com/mrtylcn99/devops-cicd-project
-- Live demo URL (if still running)
-- Screenshots of deployed application
-- Screenshots of Argo CD UI (if implemented)
-
-## Contributing
-
-Pull requests are welcome. For major changes, please open an issue first.
-
-## License
-
-This project is for educational purposes and is freely available.
-
-## Author
-
-**Mert Yalçın** - [@mrtylcn99](https://github.com/mrtylcn99)
+- Secret'lar GitHub Secrets'ta (kodda asla yok)
+- IAM roller minimum yetkilendirilmiş
+- Container resource limitleri var
+- Health check'ler aktif
 
 ---
 
-⚠️ **Remember:** Always run `terraform destroy` after testing to avoid unnecessary costs!
+**Önemli:** Test bitince `destroy.cmd dev` çalıştırmayı unutma!
+
+**Repository:** https://github.com/mrtylcn99/devops-cicd-project
