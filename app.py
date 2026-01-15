@@ -6,7 +6,6 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    """Ana sayfa - ortam bilgisi göster"""
     environment = os.getenv('ENVIRONMENT', 'unknown')
     hostname = socket.gethostname()
 
@@ -20,7 +19,6 @@ def home():
 
 @app.route('/health')
 def health():
-    """Kubernetes health check endpoint'i"""
     return jsonify({'status': 'healthy'}), 200
 
 if __name__ == '__main__':

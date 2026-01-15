@@ -51,16 +51,38 @@ Add:
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 
-### 3. Deploy Infrastructure
+### 3. Deploy Infrastructure (Choose One Method)
+
+**Option A - Automated Script (Recommended):**
+
+Windows:
+```cmd
+deploy-env.cmd dev
+```
+
+Linux/Mac:
+```bash
+./deploy-env.sh dev
+```
+
+This script automatically:
+- Deploys Terraform infrastructure
+- Configures kubectl with your cluster
+- Creates Kubernetes namespaces
+- Verifies nodes are ready
+
+**Time:** ~15 minutes
+**Cost:** ~$0.13/hour
+
+**Option B - Manual Deployment:**
 
 ```bash
 cd terraform
 terraform init
 terraform apply -var-file="dev.tfvars"
+aws eks update-kubeconfig --region eu-central-1 --name <cluster-name>
+kubectl apply -f k8s/namespace.yaml
 ```
-
-**Time:** ~12 minutes
-**Cost:** ~$0.13/hour
 
 ### 4. Deploy Application
 
@@ -87,21 +109,70 @@ Code Push → GitHub Actions → Docker Build → ECR Push → EKS Deploy → He
 
 **Duration:** 5-7 minutes per deployment
 
+## Automation Scripts
+
+This project includes automation scripts for easy deployment and cleanup.
+
+### deploy-env.cmd / deploy-env.sh
+
+**Purpose:** Complete environment setup from scratch
+
+**What it does:**
+1. Runs `terraform init` and `terraform apply` with the specified environment
+2. Automatically configures kubectl to connect to your new EKS cluster
+3. Creates Kubernetes namespaces (dev/staging/prod)
+4. Waits for nodes to be ready
+5. Displays next steps
+
+**Usage:**
+```bash
+# Windows
+deploy-env.cmd [environment]
+
+# Linux/Mac
+./deploy-env.sh [environment]
+
+# Examples
+deploy-env.cmd dev
+deploy-env.cmd staging
+```
+
+**When to use:** First-time setup or after running destroy
+
+### destroy.cmd / destroy.sh
+
+**Purpose:** Complete infrastructure cleanup
+
+**What it does:**
+1. Deletes Kubernetes namespace and all resources (pods, services, etc.)
+2. Waits 3 minutes for AWS LoadBalancer to be deleted
+3. Runs `terraform destroy` to remove all AWS infrastructure
+4. Verifies completion
+
+**Usage:**
+```bash
+# Windows
+destroy.cmd [environment]
+
+# Linux/Mac
+./destroy.sh [environment]
+
+# Examples
+destroy.cmd dev
+./destroy.sh staging
+```
+
+**When to use:** After testing to avoid AWS costs
+
+**Important:** Always destroy environments when not in use to avoid charges!
+
 ## Cost Management
 
 **EKS Cluster:** $0.10/hour (~$72/month if left running)
 
 ### Quick Cleanup
 
-**Windows:**
-```cmd
-destroy.cmd dev
-```
-
-**Linux/Mac:**
-```bash
-./destroy.sh dev
-```
+Use the automation scripts above, or manual cleanup:
 
 **Manual:**
 ```bash
@@ -256,6 +327,26 @@ Argo CD is installed on the dev cluster for GitOps-style deployments.
 - [ ] Blue-Green deployments
 - [ ] Automated testing suite
 - [ ] SSL/TLS configuration
+
+## Submission Checklist
+
+If you're submitting this project, ensure you have:
+
+- [ ] GitHub repository with all code pushed
+- [ ] GitHub Actions CI/CD pipeline working
+- [ ] At least one environment deployed and tested
+- [ ] README.md with clear instructions
+- [ ] AWS credentials configured as GitHub Secrets (never in code)
+- [ ] All 3 environment configs (dev.tfvars, staging.tfvars, prod.tfvars)
+- [ ] Automation scripts (deploy-env, destroy) working
+- [ ] Argo CD installed (optional but recommended)
+- [ ] Infrastructure destroyed after testing to avoid costs
+
+**What to share:**
+- Repository URL: https://github.com/mrtylcn99/devops-cicd-project
+- Live demo URL (if still running)
+- Screenshots of deployed application
+- Screenshots of Argo CD UI (if implemented)
 
 ## Contributing
 

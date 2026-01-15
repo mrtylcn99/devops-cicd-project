@@ -41,7 +41,7 @@ wheels/
 .DS_Store
 Thumbs.db
 
-# Secrets - KESİNLİKLE REPO'YA GİRMEMELİ
+# Secrets - NEVER commit these
 *.pem
 *.key
 *.env
