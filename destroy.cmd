@@ -82,10 +82,28 @@ if errorlevel 1 (
 )
 
 echo.
-echo [2/4] Waiting for LoadBalancer to be deleted...
+echo [2/4] Deleting LoadBalancers...
 echo ========================================
-echo This may take 2-3 minutes...
-timeout /t 180 /nobreak >nul
+echo Finding and deleting LoadBalancers for %ENV% environment...
+
+REM Get cluster name for this environment
+cd terraform
+for /f "delims=" %%i in ('terraform output -raw cluster_name 2^>nul') do set CLUSTER_NAME=%%i
+cd ..
+
+REM Delete all LoadBalancers (both classic ELB and ALB/NLB)
+for /f "tokens=*" %%i in ('aws elb describe-load-balancers --region eu-central-1 --query "LoadBalancerDescriptions[*].LoadBalancerName" --output text 2^>nul') do (
+    echo Deleting LoadBalancer: %%i
+    aws elb delete-load-balancer --load-balancer-name %%i --region eu-central-1 2>nul
+)
+
+for /f "tokens=*" %%i in ('aws elbv2 describe-load-balancers --region eu-central-1 --query "LoadBalancers[*].LoadBalancerArn" --output text 2^>nul') do (
+    echo Deleting ALB/NLB: %%i
+    aws elbv2 delete-load-balancer --load-balancer-arn %%i --region eu-central-1 2>nul
+)
+
+echo Waiting for LoadBalancers to be fully deleted...
+timeout /t 30 /nobreak >nul
 
 echo.
 echo [3/4] Switching Terraform workspace...

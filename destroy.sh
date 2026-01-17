@@ -35,10 +35,28 @@ destroy_single_env() {
     fi
 
     echo ""
-    echo "[2/4] Waiting for LoadBalancer to be deleted..."
+    echo "[2/4] Deleting LoadBalancers..."
     echo "========================================"
-    echo "This may take 2-3 minutes..."
-    sleep 180
+    echo "Finding and deleting LoadBalancers for $ENV environment..."
+
+    # Get cluster name for this environment
+    cd terraform
+    CLUSTER_NAME=$(terraform output -raw cluster_name 2>/dev/null || echo "")
+    cd ..
+
+    # Delete all LoadBalancers (both classic ELB and ALB/NLB)
+    for lb in $(aws elb describe-load-balancers --region eu-central-1 --query "LoadBalancerDescriptions[*].LoadBalancerName" --output text 2>/dev/null); do
+        echo "Deleting LoadBalancer: $lb"
+        aws elb delete-load-balancer --load-balancer-name $lb --region eu-central-1 2>/dev/null || true
+    done
+
+    for alb in $(aws elbv2 describe-load-balancers --region eu-central-1 --query "LoadBalancers[*].LoadBalancerArn" --output text 2>/dev/null); do
+        echo "Deleting ALB/NLB: $alb"
+        aws elbv2 delete-load-balancer --load-balancer-arn $alb --region eu-central-1 2>/dev/null || true
+    done
+
+    echo "Waiting for LoadBalancers to be fully deleted..."
+    sleep 30
 
     echo ""
     echo "[3/4] Switching Terraform workspace..."
