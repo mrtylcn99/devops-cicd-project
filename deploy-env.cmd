@@ -33,12 +33,36 @@ for /f "delims=" %%i in ('aws eks list-clusters --region eu-central-1 --query "c
 echo [2/3] Done
 
 echo.
-echo [3/3] Creating namespaces...
+echo [3/5] Creating namespaces...
 kubectl apply -f k8s/namespace.yaml >nul 2>&1
+echo [3/5] Done
+
+echo.
+echo [4/5] Installing Argo CD...
+kubectl create namespace argocd >nul 2>&1
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml >nul 2>&1
 timeout /t 30 /nobreak >nul
+echo [4/5] Done
+
+echo.
+echo [5/5] Configuring Argo CD Application...
+powershell -Command "(Get-Content k8s\argocd-application.yaml) -replace 'ENVIRONMENT', '%ENV%' | kubectl apply -f -" >nul 2>&1
 kubectl get nodes
-echo [3/3] Done
+echo [5/5] Done
 
 echo.
 echo %ENV% deployed.
-echo Push: git push origin %ENV%
+
+echo.
+echo Triggering CI/CD...
+git commit --allow-empty -m "deploy: Trigger CI/CD for %ENV%"
+if errorlevel 1 (
+    echo ERROR: Git commit failed
+    exit /b 1
+)
+git push origin %ENV%
+if errorlevel 1 (
+    echo ERROR: Git push failed
+    exit /b 1
+)
+echo Pushed to origin/%ENV%
