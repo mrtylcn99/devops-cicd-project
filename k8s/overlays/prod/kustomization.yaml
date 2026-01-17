@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: prod
+
+resources:
+  - ../../base
+
+images:
+  - name: 125975759471.dkr.ecr.eu-central-1.amazonaws.com/devops-cicd-dev
+    newName: 125975759471.dkr.ecr.eu-central-1.amazonaws.com/devops-cicd-prod
+    newTag: latest
+
+replicas:
+  - name: devops-app
+    count: 2
+
+commonLabels:
+  environment: prod
