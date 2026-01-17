@@ -29,6 +29,9 @@ wheels/
 *.tfstate.*
 .terraform.lock.hcl
 *.tfvars
+!dev.tfvars
+!staging.tfvars
+!prod.tfvars
 
 # IDE
 .vscode/
