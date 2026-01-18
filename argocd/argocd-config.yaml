@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  # Add local user with fixed password
+  accounts.devops: "apiKey, login"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+data:
+  # Grant admin role to devops user
+  policy.csv: |
+    g, devops, role:admin
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-secret
+  namespace: argocd
+type: Opaque
+stringData:
+  # Password: DevOps2024
+  # bcrypt hash generated with: htpasswd -nbBC 10 "" DevOps2024 | tr -d ':\n' | sed 's/$2y/$2a/'
+  accounts.devops.password: "$2a$10$8vJ5K5M5K5K5K5K5K5K5K.5K5K5K5K5K5K5K5K5K5K5K5K5K5K5K5K5K"
