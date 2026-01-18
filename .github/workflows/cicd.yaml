@@ -12,7 +12,7 @@ env:
   PROJECT_NAME: devops-cicd
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -57,40 +57,34 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Update kubeconfig for EKS
-        run: |
-          aws eks update-kubeconfig \
-            --region ${{ env.AWS_REGION }} \
-            --name ${{ env.PROJECT_NAME }}-${{ steps.set-env.outputs.environment }}-cluster
-
-      - name: Create namespace if not exists
-        run: |
-          kubectl apply -f k8s/namespace.yaml
-
-      - name: Deploy to EKS
+      - name: Update Kustomize image tag
         env:
-          ECR_REPOSITORY: ${{ steps.login-ecr.outputs.registry }}/${{ env.PROJECT_NAME }}-${{ steps.set-env.outputs.environment }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.PROJECT_NAME }}-${{ steps.set-env.outputs.environment }}
           IMAGE_TAG: ${{ github.sha }}
           ENVIRONMENT: ${{ steps.set-env.outputs.environment }}
-          REPLICAS: ${{ steps.set-env.outputs.replicas }}
         run: |
-          # Değişkenleri deployment.yaml'a uygula
-          envsubst < k8s/deployment.yaml | kubectl apply -f -
+          cd k8s/overlays/$ENVIRONMENT
 
-          # Deployment'ın tamamlanmasını bekle
-          kubectl rollout status deployment/devops-app -n $ENVIRONMENT --timeout=5m
+          # Update image tag in kustomization.yaml
+          sed -i "s|newTag:.*|newTag: $IMAGE_TAG|g" kustomization.yaml
 
-      - name: Get service URL
+          cat kustomization.yaml
+
+      - name: Commit and push updated manifest
+        env:
+          ENVIRONMENT: ${{ steps.set-env.outputs.environment }}
         run: |
-          echo "Waiting for LoadBalancer to be ready..."
-          sleep 30
-          kubectl get service devops-app-service -n ${{ steps.set-env.outputs.environment }}
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
 
-          LOAD_BALANCER=$(kubectl get service devops-app-service -n ${{ steps.set-env.outputs.environment }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          git add k8s/overlays/$ENVIRONMENT/kustomization.yaml
+          git commit -m "chore: Update $ENVIRONMENT image to ${{ github.sha }}" || echo "No changes to commit"
+          git push origin HEAD:${{ github.ref_name }}
 
-          if [ -n "$LOAD_BALANCER" ]; then
-            echo "🎉 Application deployed successfully!"
-            echo "🌐 Access your app at: http://$LOAD_BALANCER"
-          else
-            echo "⚠️ LoadBalancer not ready yet. Check with: kubectl get svc -n ${{ steps.set-env.outputs.environment }}"
-          fi
+      - name: Deployment status
+        run: |
+          echo "✅ CI completed successfully!"
+          echo "📦 Image: ${{ steps.login-ecr.outputs.registry }}/${{ env.PROJECT_NAME }}-${{ steps.set-env.outputs.environment }}:${{ github.sha }}"
+          echo "🔄 Argo CD will automatically sync and deploy the new image"
+          echo "🌐 Check Argo CD UI for deployment status"
