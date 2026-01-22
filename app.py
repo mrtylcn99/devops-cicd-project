@@ -14,7 +14,7 @@ def home():
         'environment': environment,
         'hostname': hostname,
         'status': 'healthy',
-        'version': '1.0.1'
+        'version': '1.0.2'
     })
 
 @app.route('/health')
