@@ -32,13 +32,12 @@ echo [1/7] Done
 
 echo.
 echo [2/7] Configuring kubectl...
-for /f "delims=" %%i in ('aws eks list-clusters --region eu-central-1 --query "clusters[?contains(@, ''%ENV%'')]" --output text') do (
-    echo Updating kubeconfig for cluster: %%i
-    aws eks update-kubeconfig --region eu-central-1 --name %%i
-    if errorlevel 1 (
-        echo ERROR: kubectl config update failed
-        exit /b 1
-    )
+set CLUSTER_NAME=devops-cicd-%ENV%-cluster
+echo Updating kubeconfig for cluster: %CLUSTER_NAME%
+aws eks update-kubeconfig --region eu-central-1 --name %CLUSTER_NAME%
+if errorlevel 1 (
+    echo ERROR: kubectl config update failed
+    exit /b 1
 )
 echo Testing kubectl connection...
 kubectl get nodes
