@@ -112,3 +112,18 @@ aws elbv2 describe-load-balancers --region eu-central-1 --query "LoadBalancers[?
 echo.
 echo If you see any resources above, they may need manual cleanup!
 echo.
+echo ========================================
+echo Manual Cleanup Commands (if needed):
+echo ========================================
+echo.
+echo To delete a specific EKS cluster:
+echo   aws eks delete-cluster --name CLUSTER_NAME --region eu-central-1
+echo.
+echo To delete a specific ECR repository:
+echo   aws ecr delete-repository --repository-name REPO_NAME --region eu-central-1 --force
+echo.
+echo To delete all LoadBalancers with 'k8s' in name:
+echo   for /f "delims=" %%%%i in ('aws elbv2 describe-load-balancers --region eu-central-1 --query "LoadBalancers[?contains(LoadBalancerName, 'k8s')].LoadBalancerArn" --output text') do aws elbv2 delete-load-balancer --load-balancer-arn %%%%i --region eu-central-1
+echo.
+echo ========================================
+echo.
