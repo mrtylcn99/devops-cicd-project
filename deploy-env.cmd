@@ -31,6 +31,28 @@ cd ..
 echo [1/7] Done
 
 echo.
+echo [1.5/7] Verifying ECR repository...
+set ECR_REPO_NAME=devops-cicd-%ENV%
+echo Waiting for ECR repository: %ECR_REPO_NAME%
+set ECR_READY=0
+for /L %%i in (1,1,30) do (
+    aws ecr describe-repositories --repository-names %ECR_REPO_NAME% --region eu-central-1 >nul 2>&1
+    if not errorlevel 1 (
+        echo ECR repository found!
+        set ECR_READY=1
+        goto ecr_ready
+    )
+    echo Waiting for ECR... (%%i/30^)
+    timeout /t 2 /nobreak >nul
+)
+:ecr_ready
+if %ECR_READY%==0 (
+    echo ERROR: ECR repository not created after 60 seconds
+    exit /b 1
+)
+echo [1.5/7] Done
+
+echo.
 echo [2/7] Configuring kubectl...
 set CLUSTER_NAME=devops-cicd-%ENV%-cluster
 echo Updating kubeconfig for cluster: %CLUSTER_NAME%
@@ -101,7 +123,11 @@ echo [5/7] Done
 echo.
 echo [6/7] Creating trigger file for CI/CD...
 echo Cleaning up any temporary files...
-del temp_pass.txt decoded_pass.txt nul 2>nul
+del temp_pass.txt decoded_pass.txt nul workflow_status.txt workflow_conclusion.txt 2>nul
+echo Fetching latest changes from remote...
+git fetch origin %ENV%
+echo Merging remote changes...
+git merge origin/%ENV% --no-edit -m "deploy: Merge remote changes for %ENV%"
 echo %date% %time% > .deploy-trigger
 git add .deploy-trigger
 git commit -m "deploy: Trigger CI/CD for %ENV% at %date% %time%"
@@ -110,25 +136,12 @@ if errorlevel 1 (
     echo Creating empty commit as fallback...
     git commit --allow-empty -m "deploy: Trigger CI/CD for %ENV%"
 )
+echo Pushing to remote...
 git push origin %ENV%
 if errorlevel 1 (
-    echo WARNING: Push failed, pulling remote changes...
-    echo Stashing any uncommitted changes...
-    git stash
-    git pull --rebase origin %ENV%
-    if errorlevel 1 (
-        echo ERROR: Git pull/rebase failed - resolve conflicts manually
-        git stash pop
-        exit /b 1
-    )
-    echo Restoring stashed changes...
-    git stash pop 2>nul
-    echo Retrying push after rebase...
-    git push origin %ENV%
-    if errorlevel 1 (
-        echo ERROR: Git push failed after rebase
-        exit /b 1
-    )
+    echo ERROR: Git push failed
+    echo This usually means remote has new commits. Check GitHub for conflicts.
+    exit /b 1
 )
 echo [6/7] Done
 
@@ -161,20 +174,56 @@ if %WAIT_COUNT% LSS 12 (
     goto wait_loop
 )
 del workflow_status.txt 2>nul
-echo Workflow still running after 2 minutes. Proceeding anyway...
+echo WARNING: Workflow still running after 2 minutes.
 echo Check workflow status manually: https://github.com/mrtylcn99/devops-cicd-project/actions
+echo Continuing to Argo CD sync check...
 :workflow_done
-echo [7/7] Done
+
+echo.
+echo [7.5/7] Verifying Argo CD sync...
+echo Waiting for Argo CD to sync application (max 2 minutes)...
+set SYNC_WAIT=0
+:sync_wait_loop
+timeout /t 10 /nobreak >nul
+set /a SYNC_WAIT+=1
+kubectl get application devops-app-%ENV% -n argocd -o jsonpath="{.status.sync.status}" > sync_status.txt 2>nul
+set /p SYNC_STATUS=<sync_status.txt
+kubectl get application devops-app-%ENV% -n argocd -o jsonpath="{.status.health.status}" > health_status.txt 2>nul
+set /p HEALTH_STATUS=<health_status.txt
+del sync_status.txt health_status.txt 2>nul
+echo Status: Sync=%SYNC_STATUS%, Health=%HEALTH_STATUS%
+if "%SYNC_STATUS%"=="Synced" (
+    if "%HEALTH_STATUS%"=="Healthy" (
+        echo Application is Synced and Healthy!
+        goto sync_done
+    )
+    if "%HEALTH_STATUS%"=="Progressing" (
+        if %SYNC_WAIT% LSS 12 (
+            echo Still progressing... (%SYNC_WAIT%/12^)
+            goto sync_wait_loop
+        )
+    )
+)
+if %SYNC_WAIT% LSS 12 (
+    echo Waiting for sync... (%SYNC_WAIT%/12^)
+    goto sync_wait_loop
+)
+echo WARNING: Application not fully healthy after 2 minutes
+echo Current status - Sync: %SYNC_STATUS%, Health: %HEALTH_STATUS%
+echo Check manually: kubectl get application devops-app-%ENV% -n argocd
+:sync_done
+echo [7.5/7] Done
 
 echo.
 echo ========================================
-echo %ENV% deployment initiated successfully!
+echo %ENV% deployment completed successfully!
 echo ========================================
 echo.
-echo Next steps:
-echo 1. Monitor GitHub Actions: https://github.com/mrtylcn99/devops-cicd-project/actions
-echo 2. Check Argo CD sync: kubectl get application -n argocd
-echo 3. Get LoadBalancer URL: kubectl get svc -n %ENV%
+echo Resources:
+echo 1. GitHub Actions: https://github.com/mrtylcn99/devops-cicd-project/actions
+echo 2. Argo CD Status: kubectl get application -n argocd
+echo 3. Application Pods: kubectl get pods -n %ENV%
+echo 4. LoadBalancer URL: kubectl get svc -n %ENV%
 echo.
 echo ========================================
 echo Argo CD UI Access
