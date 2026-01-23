@@ -6,8 +6,6 @@ on:
       - prod      # Production
       - staging   # Staging
       - dev       # Development
-    paths-ignore:
-      - 'k8s/overlays/*/kustomization.yaml'
 
 env:
   AWS_REGION: eu-central-1
