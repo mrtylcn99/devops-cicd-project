@@ -126,8 +126,19 @@ echo Cleaning up any temporary files...
 del temp_pass.txt decoded_pass.txt nul workflow_status.txt workflow_conclusion.txt 2>nul
 echo Fetching latest changes from remote...
 git fetch origin %ENV%
-echo Merging remote changes...
-git merge origin/%ENV% --no-edit -m "deploy: Merge remote changes for %ENV%"
+echo Merging remote changes (auto-resolve conflicts with our version)...
+git merge origin/%ENV% --no-edit --strategy-option=ours -m "deploy: Merge remote changes for %ENV%"
+if errorlevel 1 (
+    echo WARNING: Merge had conflicts, resolving automatically...
+    git checkout --ours .deploy-trigger 2>nul
+    git add .deploy-trigger 2>nul
+    git -c core.editor=true merge --continue 2>nul
+    if errorlevel 1 (
+        echo ERROR: Could not resolve merge conflicts automatically
+        git merge --abort 2>nul
+        exit /b 1
+    )
+)
 echo %date% %time% > .deploy-trigger
 git add .deploy-trigger
 git commit -m "deploy: Trigger CI/CD for %ENV% at %date% %time%"
@@ -140,8 +151,12 @@ echo Pushing to remote...
 git push origin %ENV%
 if errorlevel 1 (
     echo ERROR: Git push failed
-    echo This usually means remote has new commits. Check GitHub for conflicts.
-    exit /b 1
+    echo Attempting force push...
+    git push origin %ENV% --force-with-lease
+    if errorlevel 1 (
+        echo ERROR: Force push also failed. Check GitHub manually.
+        exit /b 1
+    )
 )
 echo [6/7] Done
 
