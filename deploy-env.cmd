@@ -123,29 +123,30 @@ echo [5/7] Done
 echo.
 echo [6/7] Creating trigger file for CI/CD...
 echo Cleaning up any temporary files...
-del temp_pass.txt decoded_pass.txt nul workflow_status.txt workflow_conclusion.txt 2>nul
-echo Fetching latest changes from remote...
-git fetch origin %ENV%
-echo Merging remote changes (auto-resolve conflicts with our version)...
-git merge origin/%ENV% --no-edit --strategy-option=ours -m "deploy: Merge remote changes for %ENV%"
-if errorlevel 1 (
-    echo WARNING: Merge had conflicts, resolving automatically...
-    git checkout --ours .deploy-trigger 2>nul
-    git add .deploy-trigger 2>nul
-    git -c core.editor=true merge --continue 2>nul
-    if errorlevel 1 (
-        echo ERROR: Could not resolve merge conflicts automatically
-        git merge --abort 2>nul
-        exit /b 1
-    )
-)
+del temp_pass.txt decoded_pass.txt nul workflow_status.txt workflow_conclusion.txt sync_status.txt health_status.txt 2>nul
+echo Creating deploy trigger...
 echo %date% %time% > .deploy-trigger
 git add .deploy-trigger
 git commit -m "deploy: Trigger CI/CD for %ENV% at %date% %time%"
 if errorlevel 1 (
-    echo WARNING: Git commit failed (maybe no changes)
-    echo Creating empty commit as fallback...
+    echo WARNING: Git commit failed, trying empty commit...
     git commit --allow-empty -m "deploy: Trigger CI/CD for %ENV%"
+    if errorlevel 1 (
+        echo WARNING: Empty commit also failed, continuing...
+    )
+)
+echo Fetching latest changes from remote...
+git fetch origin %ENV%
+echo Merging remote changes (our version takes precedence)...
+git merge origin/%ENV% --no-edit --strategy-option=ours -m "deploy: Merge remote changes for %ENV%" 2>nul
+if errorlevel 1 (
+    echo WARNING: Merge had conflicts, resolving with our version...
+    git merge -X ours origin/%ENV% --no-edit 2>nul
+    if errorlevel 1 (
+        echo ERROR: Could not resolve merge conflicts
+        git merge --abort 2>nul
+        exit /b 1
+    )
 )
 echo Pushing to remote...
 git push origin %ENV%
