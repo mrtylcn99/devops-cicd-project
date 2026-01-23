@@ -134,9 +134,36 @@ echo [6/7] Done
 
 echo.
 echo [7/7] Waiting for CI/CD pipeline...
-echo GitHub Actions should start building in ~30 seconds
+echo GitHub Actions should start building Docker image...
 echo Check: https://github.com/mrtylcn99/devops-cicd-project/actions
-timeout /t 30 /nobreak >nul
+echo.
+echo Waiting for workflow to complete (checking every 10 seconds)...
+set WAIT_COUNT=0
+:wait_loop
+timeout /t 10 /nobreak >nul
+set /a WAIT_COUNT+=1
+gh run list --repo mrtylcn99/devops-cicd-project --branch %ENV% --limit 1 --json status,conclusion -q ".[0].status" > workflow_status.txt 2>nul
+set /p WORKFLOW_STATUS=<workflow_status.txt
+if "%WORKFLOW_STATUS%"=="completed" (
+    gh run list --repo mrtylcn99/devops-cicd-project --branch %ENV% --limit 1 --json status,conclusion -q ".[0].conclusion" > workflow_conclusion.txt 2>nul
+    set /p WORKFLOW_CONCLUSION=<workflow_conclusion.txt
+    del workflow_status.txt workflow_conclusion.txt 2>nul
+    if "%WORKFLOW_CONCLUSION%"=="success" (
+        echo Workflow completed successfully! Docker image built and pushed to ECR.
+        goto workflow_done
+    ) else (
+        echo WARNING: Workflow completed but failed. Check GitHub Actions for errors.
+        goto workflow_done
+    )
+)
+if %WAIT_COUNT% LSS 12 (
+    echo Still waiting... (%WAIT_COUNT%/12 - max 2 minutes^)
+    goto wait_loop
+)
+del workflow_status.txt 2>nul
+echo Workflow still running after 2 minutes. Proceeding anyway...
+echo Check workflow status manually: https://github.com/mrtylcn99/devops-cicd-project/actions
+:workflow_done
 echo [7/7] Done
 
 echo.
