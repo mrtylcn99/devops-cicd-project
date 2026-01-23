@@ -73,10 +73,14 @@ kubectl scale deployment argocd-applicationset-controller -n argocd --replicas=0
 echo Waiting for initial admin secret to be generated...
 timeout /t 15 /nobreak >nul
 echo Getting initial admin password...
-kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" > temp_pass.txt 2>nul
-powershell -Command "$b64 = Get-Content temp_pass.txt; [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b64)) | Out-File -Encoding ASCII -NoNewline decoded_pass.txt"
-set /p ADMIN_PASSWORD=<decoded_pass.txt
-del temp_pass.txt decoded_pass.txt 2>nul
+kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" > temp_pass.txt 2^>nul
+if exist temp_pass.txt (
+    powershell -Command "$b64 = Get-Content temp_pass.txt; [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b64)) | Out-File -Encoding ASCII -NoNewline decoded_pass.txt"
+    set /p ADMIN_PASSWORD=<decoded_pass.txt
+    del temp_pass.txt decoded_pass.txt 2^>nul
+) else (
+    set ADMIN_PASSWORD=
+)
 if "%ADMIN_PASSWORD%"=="" (
     echo WARNING: Could not retrieve initial admin password
     echo You can get it later with: kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" ^| base64 -d
@@ -102,6 +106,8 @@ echo [5/7] Done
 
 echo.
 echo [6/7] Creating trigger file for CI/CD...
+echo Cleaning up any temporary files...
+del temp_pass.txt decoded_pass.txt nul 2>nul
 echo %date% %time% > .deploy-trigger
 git add .deploy-trigger
 git commit -m "deploy: Trigger CI/CD for %ENV% at %date% %time%"
@@ -113,11 +119,16 @@ if errorlevel 1 (
 git push origin %ENV%
 if errorlevel 1 (
     echo WARNING: Push failed, pulling remote changes...
+    echo Stashing any uncommitted changes...
+    git stash
     git pull --rebase origin %ENV%
     if errorlevel 1 (
         echo ERROR: Git pull/rebase failed - resolve conflicts manually
+        git stash pop
         exit /b 1
     )
+    echo Restoring stashed changes...
+    git stash pop 2>nul
     echo Retrying push after rebase...
     git push origin %ENV%
     if errorlevel 1 (
