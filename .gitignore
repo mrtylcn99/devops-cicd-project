@@ -43,6 +43,7 @@ wheels/
 # OS
 .DS_Store
 Thumbs.db
+nul
 
 # Secrets - NEVER commit these
 *.pem
