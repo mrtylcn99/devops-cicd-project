@@ -71,9 +71,10 @@ kubectl scale deployment argocd-dex-server -n argocd --replicas=0
 kubectl scale deployment argocd-notifications-controller -n argocd --replicas=0
 kubectl scale deployment argocd-applicationset-controller -n argocd --replicas=0
 echo Setting admin password (DevOps2024!)...
-kubectl -n argocd patch secret argocd-secret -p "{\"stringData\": {\"admin.password\": \"$2a$10$rRyBsGSHK6.uc8fntPwVIuLgs7mO9d.T.SrXdl9/..0vQPzQ7TL3S\", \"admin.passwordMtime\": \"2026-01-22T00:00:00Z\"}}"
+kubectl -n argocd patch secret argocd-secret -p "{\"stringData\": {\"admin.password\": \"$2a$10$rRyBsGSHK6.uc8fntPwVIuLgs7mO9d.T.SrXdl9/..0vQPzQ7TL3S\", \"admin.passwordMtime\": \"2026-01-23T00:00:00Z\"}}"
 kubectl -n argocd rollout restart deployment argocd-server
-timeout /t 15 /nobreak >nul
+echo Waiting for Argo CD server to restart (40 seconds)...
+timeout /t 40 /nobreak >nul
 echo [4/7] Done (Password: DevOps2024!)
 
 echo.
