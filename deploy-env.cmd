@@ -99,8 +99,18 @@ if errorlevel 1 (
 )
 git push origin %ENV%
 if errorlevel 1 (
-    echo ERROR: Git push failed
-    exit /b 1
+    echo WARNING: Push failed, pulling remote changes...
+    git pull --rebase origin %ENV%
+    if errorlevel 1 (
+        echo ERROR: Git pull/rebase failed - resolve conflicts manually
+        exit /b 1
+    )
+    echo Retrying push after rebase...
+    git push origin %ENV%
+    if errorlevel 1 (
+        echo ERROR: Git push failed after rebase
+        exit /b 1
+    )
 )
 echo [6/7] Done
 
