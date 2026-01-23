@@ -70,12 +70,24 @@ echo Scaling down unnecessary Argo CD components...
 kubectl scale deployment argocd-dex-server -n argocd --replicas=0
 kubectl scale deployment argocd-notifications-controller -n argocd --replicas=0
 kubectl scale deployment argocd-applicationset-controller -n argocd --replicas=0
-echo Setting admin password (DevOps2024!)...
-kubectl -n argocd patch secret argocd-secret -p "{\"stringData\": {\"admin.password\": \"$2a$10$rRyBsGSHK6.uc8fntPwVIuLgs7mO9d.T.SrXdl9/..0vQPzQ7TL3S\", \"admin.passwordMtime\": \"2026-01-23T00:00:00Z\"}}"
-kubectl -n argocd rollout restart deployment argocd-server
-echo Waiting for Argo CD server to restart (40 seconds)...
-timeout /t 40 /nobreak >nul
-echo [4/7] Done (Password: DevOps2024!)
+echo Waiting for initial admin secret to be generated...
+timeout /t 15 /nobreak >nul
+echo Getting initial admin password...
+kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" > temp_pass.txt 2>nul
+powershell -Command "$b64 = Get-Content temp_pass.txt; [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b64)) | Out-File -Encoding ASCII -NoNewline decoded_pass.txt"
+set /p ADMIN_PASSWORD=<decoded_pass.txt
+del temp_pass.txt decoded_pass.txt 2>nul
+if "%ADMIN_PASSWORD%"=="" (
+    echo WARNING: Could not retrieve initial admin password
+    echo You can get it later with: kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" ^| base64 -d
+    echo [4/7] Done
+) else (
+    echo [4/7] Done
+    echo.
+    echo ========================================
+    echo Argo CD Admin Password: %ADMIN_PASSWORD%
+    echo ========================================
+)
 
 echo.
 echo [5/7] Deploying Argo CD Application...
