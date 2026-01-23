@@ -73,14 +73,7 @@ kubectl scale deployment argocd-applicationset-controller -n argocd --replicas=0
 echo Waiting for initial admin secret to be generated...
 timeout /t 15 /nobreak >nul
 echo Getting initial admin password...
-kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" > temp_pass.txt 2^>nul
-if exist temp_pass.txt (
-    powershell -Command "$b64 = Get-Content temp_pass.txt; [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b64)) | Out-File -Encoding ASCII -NoNewline decoded_pass.txt"
-    set /p ADMIN_PASSWORD=<decoded_pass.txt
-    del temp_pass.txt decoded_pass.txt 2^>nul
-) else (
-    set ADMIN_PASSWORD=
-)
+for /f "delims=" %%i in ('powershell -Command "$b64 = kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' 2>$null; if($b64){ [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b64)) }"') do set ADMIN_PASSWORD=%%i
 if "%ADMIN_PASSWORD%"=="" (
     echo WARNING: Could not retrieve initial admin password
     echo You can get it later with: kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" ^| base64 -d
