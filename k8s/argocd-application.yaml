@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: devops-app-prod
+  name: devops-app-ENVIRONMENT
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/mrtylcn99/devops-cicd-project.git
-    targetRevision: prod
-    path: k8s/overlays/prod
+    targetRevision: ENVIRONMENT
+    path: k8s
   destination:
     server: https://kubernetes.default.svc
-    namespace: prod
+    namespace: ENVIRONMENT
   syncPolicy:
     automated:
       prune: true

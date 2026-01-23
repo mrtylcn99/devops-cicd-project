@@ -23,8 +23,9 @@ deploy-env.cmd            # 3 ortam birden (~45-60 dakika)
 
 **Tek Ortam Başlat:**
 ```bash
-deploy-env.cmd dev        # Sadece dev (~15 dakika)
-git push origin dev       # Uygulama deploy (~5 dakika)
+deploy-env.cmd dev
+deploy-env.cmd staging
+deploy-env.cmd prod        # Sadece biri (~15 dakika)
 ```
 
 **Durdur:**
