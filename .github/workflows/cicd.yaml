@@ -27,7 +27,7 @@ jobs:
       - name: Determine environment from branch
         id: set-env
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          if [[ "${{ github.ref }}" == "refs/heads/prod" ]]; then
             echo "environment=prod" >> $GITHUB_OUTPUT
             echo "replicas=2" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
