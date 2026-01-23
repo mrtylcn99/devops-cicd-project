@@ -54,3 +54,5 @@ aws-credentials.txt
 # Logs
 *.log
 .claude/
+
+# Note: .deploy-trigger is intentionally NOT ignored (used for CI/CD trigger)

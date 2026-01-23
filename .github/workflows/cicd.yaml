@@ -6,10 +6,15 @@ on:
       - main      # Production
       - staging   # Staging
       - dev       # Development
+    paths-ignore:
+      - 'k8s/overlays/*/kustomization.yaml'
 
 env:
   AWS_REGION: eu-central-1
   PROJECT_NAME: devops-cicd
+
+permissions:
+  contents: write
 
 jobs:
   build-and-push:
