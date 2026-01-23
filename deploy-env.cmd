@@ -148,3 +148,22 @@ echo 1. Monitor GitHub Actions: https://github.com/mrtylcn99/devops-cicd-project
 echo 2. Check Argo CD sync: kubectl get application -n argocd
 echo 3. Get LoadBalancer URL: kubectl get svc -n %ENV%
 echo.
+echo ========================================
+echo Argo CD UI Access
+echo ========================================
+if not "%ADMIN_PASSWORD%"=="" (
+    echo Username: admin
+    echo Password: %ADMIN_PASSWORD%
+    echo.
+    echo To access Argo CD UI, run this command in a NEW terminal:
+    echo kubectl port-forward svc/argocd-server -n argocd 9090:443
+    echo.
+    echo Then open: https://localhost:9090
+    echo.
+) else (
+    echo To get Argo CD password:
+    echo kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" ^| base64 -d
+    echo.
+)
+echo ========================================
+echo.
