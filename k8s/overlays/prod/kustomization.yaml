@@ -9,7 +9,7 @@ resources:
 images:
   - name: 125975759471.dkr.ecr.eu-central-1.amazonaws.com/devops-cicd-dev
     newName: 125975759471.dkr.ecr.eu-central-1.amazonaws.com/devops-cicd-prod
-    newTag: 24659e077acb56b9d2d55e1447f6870c2c21fd91
+    newTag: b7338330dfe0ba62f1de097ce7761747c92f97c9
 
 replicas:
   - name: devops-app
