@@ -14,6 +14,17 @@ if /i not "%CONFIRM%"=="Y" (
 )
 
 echo.
+echo [0/7] Switching to %ENV% branch...
+git fetch origin %ENV%
+git checkout %ENV%
+if errorlevel 1 (
+    echo ERROR: Could not switch to %ENV% branch
+    exit /b 1
+)
+git pull origin %ENV%
+echo [0/7] Done
+
+echo.
 echo [1/7] Creating infrastructure...
 cd terraform
 if "%ENV%"=="dev" (
